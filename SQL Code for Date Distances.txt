@@ -1,0 +1,41 @@
+WITH date_series AS (
+       SELECT 
+        TO_DATE(DATE_TRUNC('MONTH', '2010-01-01')) AS start_date,
+        TO_DATE(DATE_TRUNC('MONTH', CURRENT_DATE())) AS end_date
+),
+months_list AS (
+    
+    SELECT 
+        SEQ4() AS month_diff,
+        DATEADD(MONTH, SEQ4(), start_date) AS month_start
+    FROM date_series,
+         TABLE(GENERATOR(ROWCOUNT => DATEDIFF(MONTH, start_date, end_date) + 1))
+),
+month_diff_calculated AS (
+    
+    SELECT 
+        month_start,
+        MONTHS_BETWEEN(CURRENT_DATE(), month_start) AS month_diff
+    FROM months_list
+),
+term_grouped AS (
+    
+    SELECT 
+        month_start,
+        month_diff,
+        CASE
+            WHEN month_diff BETWEEN 0 AND 12 THEN 'Term 1'
+            WHEN month_diff BETWEEN 13 AND 24 THEN 'Term 2'
+            WHEN month_diff BETWEEN 25 AND 36 THEN 'Term 3'
+            WHEN month_diff BETWEEN 37 AND 48 THEN 'Term 4'
+            WHEN month_diff >= 49 THEN 'Term 5'
+        END AS term_group
+    FROM month_diff_calculated
+)
+SELECT 
+    month_start, 
+    TO_CHAR(month_start, 'YYYY-MM') AS month,
+    month_diff,
+    term_group
+FROM term_grouped
+ORDER BY month_start;
