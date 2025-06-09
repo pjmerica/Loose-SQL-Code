@@ -1,4 +1,3 @@
--- snowflake
 WITH RECURSIVE month_sequence AS (
     -- Start from 2015-01
     SELECT TO_DATE('2015-01-01', 'YYYY-MM-DD') AS month_start
@@ -6,30 +5,28 @@ WITH RECURSIVE month_sequence AS (
     -- Recursively generate the next month
     SELECT DATEADD(MONTH, 1, month_start)
     FROM month_sequence
-    WHERE month_start < '2024-08-01'  -- Stop at the end date (2024-08)
+    WHERE month_start <= '2024-08-01'  -- Stop at the end date (2024-08)
 ),
-month_diff_calculated AS (
-    -- Calculate the month difference from each month_start to the end date (2024-08)
+total_months AS (
+    -- Calculate the total number of months between 2015-01 and 2024-08
+    SELECT DATEDIFF(MONTH, TO_DATE('2015-01-01', 'YYYY-MM-DD'), TO_DATE('2024-08-01', 'YYYY-MM-DD')) AS total_months
+),
+term_grouped AS (
+    -- Assign each row to a random term group based on the total number of months divided into 5 groups
     SELECT 
         month_start,
         DATEADD(MONTH, 1, month_start) AS month_end,  -- Calculate the next month for month_end
-        DATEDIFF(MONTH, month_start, TO_DATE('2024-08-01', 'YYYY-MM-DD')) AS month_diff
-    FROM month_sequence
-),
-term_grouped AS (
-    -- Assign each row to a term group based on month_diff
-    SELECT 
-        month_start,
-        month_end,
-        month_diff,
+        DATEDIFF(MONTH, TO_DATE('2015-01-01', 'YYYY-MM-DD'), month_start) AS month_diff,
+        total_months,
+        -- Calculate the term group based on month_diff, dividing the total months into 5 equal segments
         CASE
-            WHEN month_diff BETWEEN 0 AND 12 THEN 'Group 1'
-            WHEN month_diff BETWEEN 13 AND 24 THEN 'Group 2'
-            WHEN month_diff BETWEEN 25 AND 36 THEN 'Group 3'
-            WHEN month_diff BETWEEN 37 AND 48 THEN 'Group 4'
-            WHEN month_diff >= 49 THEN 'Group 5'
+            WHEN month_diff < (total_months / 5) THEN 'Group 1'
+            WHEN month_diff < (total_months / 5) * 2 THEN 'Group 2'
+            WHEN month_diff < (total_months / 5) * 3 THEN 'Group 3'
+            WHEN month_diff < (total_months / 5) * 4 THEN 'Group 4'
+            ELSE 'Group 5'
         END AS term_group
-    FROM month_diff_calculated
+    FROM month_sequence, total_months
 )
 SELECT 
     TO_CHAR(month_start, 'YYYY-MM') AS month_start,  -- Format the month_start as 'YYYY-MM'
