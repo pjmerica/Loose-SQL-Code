@@ -1,11 +1,11 @@
 WITH RECURSIVE month_sequence AS (
     -- Generate all months starting from 2015-01
-    SELECT TO_DATE('2015-01-01', 'YYYY-MM-DD') AS month_start
+    SELECT TO_DATE('2018-01-01', 'YYYY-MM-DD') AS month_start
     UNION ALL
     -- Recursively generate the next month
     SELECT DATEADD(MONTH, 1, month_start)
     FROM month_sequence
-    WHERE month_start <= '2024-08-01'  -- Stop at 2024-08
+    WHERE month_start <= '2024-12-01'  -- Stop at 2024-08
 ),
 categories AS (
     -- List of categories A, B, C, D, E
