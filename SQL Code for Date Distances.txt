@@ -7,34 +7,34 @@ WITH RECURSIVE month_sequence AS (
     FROM month_sequence
     WHERE month_start <= '2024-08-01'  -- Stop at the end date (2024-08)
 ),
+category_assigned AS (
+    -- Assign categories 'A', 'B', 'C', 'D', 'E' cyclically to each month_start
+    SELECT 
+        month_start,
+        CASE
+            WHEN ROW_NUMBER() OVER (ORDER BY month_start) % 5 = 1 THEN 'A'
+            WHEN ROW_NUMBER() OVER (ORDER BY month_start) % 5 = 2 THEN 'B'
+            WHEN ROW_NUMBER() OVER (ORDER BY month_start) % 5 = 3 THEN 'C'
+            WHEN ROW_NUMBER() OVER (ORDER BY month_start) % 5 = 4 THEN 'D'
+            ELSE 'E'
+        END AS category
+    FROM month_sequence
+),
 month_combinations AS (
     -- Cross join month_start with itself to get all combinations of (month_start, month_end)
     SELECT 
         m1.month_start,
-        m2.month_start AS month_end
+        m2.month_start AS month_end,
+        c.category
     FROM month_sequence m1
     CROSS JOIN month_sequence m2
+    JOIN category_assigned c ON m1.month_start = c.month_start
     WHERE m2.month_start >= m1.month_start  -- Ensure month_end is same or after month_start
-),
-category_assigned AS (
-    -- Assign categories 'A', 'B', 'C', 'D', 'E' cyclically to each combination
-    SELECT 
-        month_start,
-        month_end,
-        DATEDIFF(MONTH, month_start, month_end) AS month_diff,
-        CASE
-            WHEN ROW_NUMBER() OVER (ORDER BY month_start, month_end) % 5 = 1 THEN 'A'
-            WHEN ROW_NUMBER() OVER (ORDER BY month_start, month_end) % 5 = 2 THEN 'B'
-            WHEN ROW_NUMBER() OVER (ORDER BY month_start, month_end) % 5 = 3 THEN 'C'
-            WHEN ROW_NUMBER() OVER (ORDER BY month_start, month_end) % 5 = 4 THEN 'D'
-            ELSE 'E'
-        END AS category
-    FROM month_combinations
 )
 SELECT 
-    TO_CHAR(month_start, 'YYYY-MM') AS month_start,  -- Format the month_start as 'YYYY-MM'
-    TO_CHAR(month_end, 'YYYY-MM') AS month_end,      -- Format the month_end as 'YYYY-MM'
-    month_diff,                                      -- Show the calculated month_diff
-    category                                         -- Show the category
-FROM category_assigned
+    TO_CHAR(month_start, 'YYYY-MM') AS month_start,    -- Format the month_start as 'YYYY-MM'
+    TO_CHAR(month_end, 'YYYY-MM') AS month_end,        -- Format the month_end as 'YYYY-MM'
+    DATEDIFF(MONTH, month_start, month_end) AS month_diff,  -- Calculate the month difference
+    category                                             -- Show the category
+FROM month_combinations
 ORDER BY month_start, month_end;  -- Ensure the results are ordered by month_start and month_end
