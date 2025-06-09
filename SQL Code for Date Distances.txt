@@ -1,10 +1,11 @@
 WITH date_series AS (
-       SELECT 
-        TO_DATE(DATE_TRUNC('MONTH', '2010-01-01')) AS start_date,
-        TO_DATE(DATE_TRUNC('MONTH', CURRENT_DATE())) AS end_date
+    -- Generate series of dates from a start date (e.g., January 2010) to the current month
+    SELECT 
+        TO_DATE('2010-01-01', 'YYYY-MM-DD') AS start_date,
+        CURRENT_DATE() AS end_date
 ),
 months_list AS (
-    
+    -- Generate a series of months from start_date to end_date
     SELECT 
         SEQ4() AS month_diff,
         DATEADD(MONTH, SEQ4(), start_date) AS month_start
@@ -12,14 +13,14 @@ months_list AS (
          TABLE(GENERATOR(ROWCOUNT => DATEDIFF(MONTH, start_date, end_date) + 1))
 ),
 month_diff_calculated AS (
-    
+    -- Calculate the months difference for each row
     SELECT 
         month_start,
         MONTHS_BETWEEN(CURRENT_DATE(), month_start) AS month_diff
     FROM months_list
 ),
 term_grouped AS (
-    
+    -- Divide into 5 term groups based on the month_diff
     SELECT 
         month_start,
         month_diff,
