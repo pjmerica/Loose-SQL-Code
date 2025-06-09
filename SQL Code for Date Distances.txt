@@ -1,16 +1,18 @@
+-- snowflake
 WITH date_series AS (
     -- Generate start date and end date (using static values)
     SELECT 
         TO_DATE('2010-01-01', 'YYYY-MM-DD') AS start_date,
-        CURRENT_DATE() AS end_date
+        CURRENT_DATE() AS end_date,
+        DATEDIFF(MONTH, TO_DATE('2010-01-01', 'YYYY-MM-DD'), CURRENT_DATE()) AS month_diff
 ),
 months_list AS (
-    -- Generate a series of months from start_date to end_date
+    -- Generate a series of months from start_date to end_date using a sequence
     SELECT 
-        SEQ4() AS month_diff,
-        DATEADD(MONTH, SEQ4(), start_date) AS month_start
-    FROM date_series, 
-         TABLE(GENERATOR(ROWCOUNT => DATEDIFF(MONTH, start_date, CURRENT_DATE()) + 1))
+        DATEADD(MONTH, seq, start_date) AS month_start,
+        seq AS month_diff
+    FROM date_series,
+         SEQUENCE(0, month_diff) AS seq
 ),
 month_diff_calculated AS (
     -- Calculate the months difference for each row
