@@ -7,28 +7,23 @@ WITH RECURSIVE month_sequence AS (
     FROM month_sequence
     WHERE month_start <= '2024-08-01'  -- Stop at 2024-08
 ),
-category_assigned AS (
-    -- Create a row number to cycle categories cyclically for each month_start
-    SELECT 
-        month_start,
-        CASE 
-            WHEN ROW_NUMBER() OVER (ORDER BY month_start) % 5 = 1 THEN 'A'
-            WHEN ROW_NUMBER() OVER (ORDER BY month_start) % 5 = 2 THEN 'B'
-            WHEN ROW_NUMBER() OVER (ORDER BY month_start) % 5 = 3 THEN 'C'
-            WHEN ROW_NUMBER() OVER (ORDER BY month_start) % 5 = 4 THEN 'D'
-            ELSE 'E'
-        END AS category
-    FROM month_sequence
+categories AS (
+    -- List of categories A, B, C, D, E
+    SELECT 'A' AS category
+    UNION ALL SELECT 'B'
+    UNION ALL SELECT 'C'
+    UNION ALL SELECT 'D'
+    UNION ALL SELECT 'E'
 ),
 month_combinations AS (
-    -- Cross join month_start with month_end to generate all combinations
+    -- Generate all combinations of month_start, month_end, and categories
     SELECT 
         m1.month_start,
         m2.month_start AS month_end,
         c.category
     FROM month_sequence m1
+    CROSS JOIN categories c
     CROSS JOIN month_sequence m2
-    JOIN category_assigned c ON m1.month_start = c.month_start
     WHERE m2.month_start >= m1.month_start  -- Ensure month_end is same or after month_start
 )
 SELECT 
