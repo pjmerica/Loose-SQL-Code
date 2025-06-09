@@ -1,49 +1,40 @@
 -- snowflake
-WITH date_series AS (
-    -- Define the start and end dates
-    SELECT 
-        TO_DATE('2010-01-01', 'YYYY-MM-DD') AS start_date,
-        CURRENT_DATE() AS end_date,
-        DATEDIFF(MONTH, TO_DATE('2010-01-01', 'YYYY-MM-DD'), CURRENT_DATE()) AS month_diff
-),
-month_numbers AS (
-    -- Create a sequence of numbers (0, 1, 2, ..., month_diff)
-    SELECT ROW_NUMBER() OVER (ORDER BY 1) - 1 AS month_num
-    FROM TABLE(FLATTEN(input => ARRAY_CONSTRUCT(0))) -- generate a series of rows
-    QUALIFY month_num <= (SELECT month_diff FROM date_series)
-),
-months_list AS (
-    -- Calculate the actual month start date by adding months to start_date
-    SELECT 
-        DATEADD(MONTH, month_num, start_date) AS month_start
-    FROM date_series
-    JOIN month_numbers ON month_numbers.month_num <= (SELECT month_diff FROM date_series)
+WITH RECURSIVE month_sequence AS (
+    -- Start from 2015-01
+    SELECT TO_DATE('2015-01-01', 'YYYY-MM-DD') AS month_start
+    UNION ALL
+    -- Recursively generate the next month
+    SELECT DATEADD(MONTH, 1, month_start)
+    FROM month_sequence
+    WHERE month_start < '2024-08-01'  -- Stop at the end date (2024-08)
 ),
 month_diff_calculated AS (
-    -- Calculate the months difference for each row
+    -- Calculate the month difference from each month_start to the end date (2024-08)
     SELECT 
         month_start,
-        MONTHS_BETWEEN(CURRENT_DATE(), month_start) AS month_diff
-    FROM months_list
+        DATEADD(MONTH, 1, month_start) AS month_end,  -- Calculate the next month for month_end
+        DATEDIFF(MONTH, month_start, TO_DATE('2024-08-01', 'YYYY-MM-DD')) AS month_diff
+    FROM month_sequence
 ),
 term_grouped AS (
-    -- Divide into 5 term groups based on the month_diff
+    -- Assign each row to a term group based on month_diff
     SELECT 
         month_start,
+        month_end,
         month_diff,
         CASE
-            WHEN month_diff BETWEEN 0 AND 12 THEN 'Term 1'
-            WHEN month_diff BETWEEN 13 AND 24 THEN 'Term 2'
-            WHEN month_diff BETWEEN 25 AND 36 THEN 'Term 3'
-            WHEN month_diff BETWEEN 37 AND 48 THEN 'Term 4'
-            WHEN month_diff >= 49 THEN 'Term 5'
+            WHEN month_diff BETWEEN 0 AND 12 THEN 'Group 1'
+            WHEN month_diff BETWEEN 13 AND 24 THEN 'Group 2'
+            WHEN month_diff BETWEEN 25 AND 36 THEN 'Group 3'
+            WHEN month_diff BETWEEN 37 AND 48 THEN 'Group 4'
+            WHEN month_diff >= 49 THEN 'Group 5'
         END AS term_group
     FROM month_diff_calculated
 )
 SELECT 
-    month_start, 
-    TO_CHAR(month_start, 'YYYY-MM') AS month,
-    month_diff,
-    term_group
+    TO_CHAR(month_start, 'YYYY-MM') AS month_start,  -- Format the month_start as 'YYYY-MM'
+    TO_CHAR(month_end, 'YYYY-MM') AS month_end,      -- Format the month_end as 'YYYY-MM'
+    month_diff,                                      -- Show the calculated month_diff
+    term_group                                        -- Show the term group
 FROM term_grouped
-ORDER BY month_start;
+ORDER BY month_start;  -- Ensure the results are ordered by the starting month
