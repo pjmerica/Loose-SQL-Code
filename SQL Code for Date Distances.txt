@@ -8,7 +8,7 @@ WITH date_series AS (
 ),
 month_numbers AS (
     -- Create a sequence of numbers (0, 1, 2, ..., month_diff)
-    SELECT ROW_NUMBER() OVER () - 1 AS month_num
+    SELECT ROW_NUMBER() OVER (ORDER BY 1) - 1 AS month_num
     FROM TABLE(FLATTEN(input => ARRAY_CONSTRUCT(0))) -- generate a series of rows
     QUALIFY month_num <= (SELECT month_diff FROM date_series)
 ),
