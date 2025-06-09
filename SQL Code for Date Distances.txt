@@ -1,5 +1,5 @@
 WITH date_series AS (
-    -- Generate series of dates from a start date (e.g., January 2010) to the current month
+    -- Generate start date and end date (using static values)
     SELECT 
         TO_DATE('2010-01-01', 'YYYY-MM-DD') AS start_date,
         CURRENT_DATE() AS end_date
@@ -9,8 +9,8 @@ months_list AS (
     SELECT 
         SEQ4() AS month_diff,
         DATEADD(MONTH, SEQ4(), start_date) AS month_start
-    FROM date_series,
-         TABLE(GENERATOR(ROWCOUNT => DATEDIFF(MONTH, start_date, end_date) + 1))
+    FROM date_series, 
+         TABLE(GENERATOR(ROWCOUNT => DATEDIFF(MONTH, start_date, CURRENT_DATE()) + 1))
 ),
 month_diff_calculated AS (
     -- Calculate the months difference for each row
