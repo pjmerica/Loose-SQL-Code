@@ -7,31 +7,34 @@ WITH RECURSIVE month_sequence AS (
     FROM month_sequence
     WHERE month_start <= '2024-08-01'  -- Stop at the end date (2024-08)
 ),
-total_months AS (
-    -- Calculate the total number of months between 2015-01 and 2024-08
-    SELECT DATEDIFF(MONTH, TO_DATE('2015-01-01', 'YYYY-MM-DD'), TO_DATE('2024-08-01', 'YYYY-MM-DD')) AS total_months
+month_combinations AS (
+    -- Cross join month_start with itself to get all combinations of (month_start, month_end)
+    SELECT 
+        m1.month_start,
+        m2.month_start AS month_end
+    FROM month_sequence m1
+    CROSS JOIN month_sequence m2
+    WHERE m2.month_start >= m1.month_start  -- Ensure month_end is same or after month_start
 ),
-term_grouped AS (
-    -- Assign each row to a random term group based on the total number of months divided into 5 groups
+category_assigned AS (
+    -- Assign categories 'A', 'B', 'C', 'D', 'E' cyclically to each combination
     SELECT 
         month_start,
-        DATEADD(MONTH, 1, month_start) AS month_end,  -- Calculate the next month for month_end
-        DATEDIFF(MONTH, TO_DATE('2015-01-01', 'YYYY-MM-DD'), month_start) AS month_diff,
-        total_months,
-        -- Calculate the term group based on month_diff, dividing the total months into 5 equal segments
+        month_end,
+        DATEDIFF(MONTH, month_start, month_end) AS month_diff,
         CASE
-            WHEN month_diff < (total_months / 5) THEN 'Group 1'
-            WHEN month_diff < (total_months / 5) * 2 THEN 'Group 2'
-            WHEN month_diff < (total_months / 5) * 3 THEN 'Group 3'
-            WHEN month_diff < (total_months / 5) * 4 THEN 'Group 4'
-            ELSE 'Group 5'
-        END AS term_group
-    FROM month_sequence, total_months
+            WHEN ROW_NUMBER() OVER (ORDER BY month_start, month_end) % 5 = 1 THEN 'A'
+            WHEN ROW_NUMBER() OVER (ORDER BY month_start, month_end) % 5 = 2 THEN 'B'
+            WHEN ROW_NUMBER() OVER (ORDER BY month_start, month_end) % 5 = 3 THEN 'C'
+            WHEN ROW_NUMBER() OVER (ORDER BY month_start, month_end) % 5 = 4 THEN 'D'
+            ELSE 'E'
+        END AS category
+    FROM month_combinations
 )
 SELECT 
     TO_CHAR(month_start, 'YYYY-MM') AS month_start,  -- Format the month_start as 'YYYY-MM'
     TO_CHAR(month_end, 'YYYY-MM') AS month_end,      -- Format the month_end as 'YYYY-MM'
     month_diff,                                      -- Show the calculated month_diff
-    term_group                                        -- Show the term group
-FROM term_grouped
-ORDER BY month_start;  -- Ensure the results are ordered by the starting month
+    category                                         -- Show the category
+FROM category_assigned
+ORDER BY month_start, month_end;  -- Ensure the results are ordered by month_start and month_end
