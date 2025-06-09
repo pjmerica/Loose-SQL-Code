@@ -8,7 +8,7 @@ WITH RECURSIVE month_sequence AS (
     WHERE month_start <= '2024-08-01'  -- Stop at 2024-08
 ),
 category_assigned AS (
-    -- Assign each month_start one of the categories 'A', 'B', 'C', 'D', 'E' cyclically
+    -- Assign categories 'A', 'B', 'C', 'D', 'E' cyclically to each month_start
     SELECT 
         month_start,
         CASE 
@@ -37,4 +37,4 @@ SELECT
     DATEDIFF(MONTH, month_start, month_end) AS month_diff,  -- Calculate the month difference
     category                                             -- Show the category
 FROM month_combinations
-ORDER BY month_start, month_end;  -- Order the result by month_start and month_end
+ORDER BY month_start, month_end, category;  -- Order the result by month_start, month_end, and category
